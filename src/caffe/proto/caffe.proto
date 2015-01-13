@@ -227,7 +227,7 @@ message LayerParameter {
   // line above the enum. Update the next available ID when you add a new
   // LayerType.
   //
-  // LayerType next available ID: 39 (last added: EXP)
+  // LayerType next available ID: 43 (last added: PER_CLASS_ACCURACY)
   enum LayerType {
     // "NONE" layer type is 0th enum element so that we don't cause confusion
     // by defaulting to an existent LayerType (instead, should usually error if
@@ -271,6 +271,10 @@ message LayerParameter {
     TANH = 23;
     WINDOW_DATA = 24;
     THRESHOLD = 31;
+				SOFTMAX_REBALANCED_LOSS = 39;
+				PER_CLASS_ACCURACY = 42;
+        SPATIAL_PYRAMID_POOLING = 41;
+				PYRAMID_LEVEL = 40;
   }
   optional LayerType type = 5; // the layer type from the enum above
 
@@ -327,7 +331,9 @@ message LayerParameter {
   optional TanHParameter tanh_param = 37;
   optional ThresholdParameter threshold_param = 25;
   optional WindowDataParameter window_data_param = 20;
-
+	optional SpatialPyramidPoolingParameter spatial_pyramid_pooling_param = 43; 
+  optional PyramidLevelParameter pyramid_level_param = 42;
+  
   // Parameters for data pre-processing.
   optional TransformationParameter transform_param = 36;
 
@@ -619,6 +625,37 @@ message PoolingParameter {
   // If global_pooling then it will pool over the size of the bottom by doing
   // kernel_h = bottom->height and kernel_w = bottom->width
   optional bool global_pooling = 12 [default = false];
+}
+// Message that stores parameters used by PyramidLevelParameter
+message PyramidLevelParameter {
+  enum PoolMethod {
+    MAX = 0;
+    AVE = 1;
+    STOCHASTIC = 2;
+  }
+  optional PoolMethod pool = 1 [default = MAX]; // The pooling method
+  optional uint32 bin_num_h = 2; // number of spatial bins along height axis
+  optional uint32 bin_num_w = 3; // number of spatial bins along width axis
+  optional uint32 roi_start_h = 4;
+  optional uint32 roi_start_w = 5;
+  optional uint32 roi_end_h = 6;
+  optional uint32 roi_end_w = 7;
+}
+
+// Message that stores parameters used by SpatialPyramidPoolingLayer
+message SpatialPyramidPoolingParameter {
+  enum PoolMethod {
+    MAX = 0;
+    AVE = 1;
+    STOCHASTIC = 2;
+  }
+  optional PoolMethod pool = 1 [default = MAX]; // The pooling method
+  // The number of spatial bins of each pyramid level
+  repeated uint32 spatial_bin = 2;
+  optional uint32 roi_start_h = 3;
+  optional uint32 roi_start_w = 4;
+  optional uint32 roi_end_h = 5;
+  optional uint32 roi_end_w = 6;
 }
 
 // Message that stores parameters used by PowerLayer

@@ -356,6 +356,95 @@ class CuDNNPoolingLayer : public PoolingLayer<Dtype> {
 };
 #endif
 
+/* PyramidLevelLayer
+*/
+template <typename Dtype>
+class PyramidLevelLayer : public Layer<Dtype> {
+ public:
+  explicit PyramidLevelLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+	virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+	
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_POOLING;
+  }
+  virtual inline int ExactNumBottomBlobs() const { return 1; }
+  virtual inline int MinTopBlobs() const { return 1; }
+  virtual inline int MaxTopBlobs() const { return 1; }
+  void setROI(int roi_start_h, int roi_start_w, int roi_end_h, int roi_end_w);
+
+ protected:
+  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+
+  int bin_num_h_;
+  int bin_num_w_;
+  float bin_size_h_;
+  float bin_size_w_;
+  int channels_;
+  int height_;
+  int width_;
+  int roi_start_h_;
+  int roi_start_w_;
+  int roi_end_h_;
+  int roi_end_w_;
+  Blob<Dtype> rand_idx_;
+  shared_ptr<Blob<int> > max_idx_;
+};
+
+/* SpatialPyramidPoolingLayer
+*/
+template <typename Dtype>
+class SpatialPyramidPoolingLayer : public Layer<Dtype> {
+ public:
+  explicit SpatialPyramidPoolingLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+	virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  virtual inline LayerParameter_LayerType type() const {
+    return LayerParameter_LayerType_SPATIAL_PYRAMID_POOLING;
+  }
+  virtual inline int ExactNumBottomBlobs() const { return 1; }
+  virtual inline int ExactNumTopBlobs() const { return 1; }
+  void setROI(int roi_start_h, int roi_start_w, int roi_end_h, int roi_end_w);
+
+ protected:
+  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+
+  int num_pyramid_levels_;
+  int channels_;
+  int height_;
+  int width_;
+  shared_ptr<SplitLayer<Dtype> > split_layer_;
+  vector<Blob<Dtype>*> split_top_vec_;
+  vector<shared_ptr<PyramidLevelLayer<Dtype> > > pyramid_levels_;
+  vector<shared_ptr<FlattenLayer<Dtype> > > flatten_layers_;
+  shared_ptr<ConcatLayer<Dtype> > concat_layer_;
+  vector<vector<Blob<Dtype>*> > pooling_bottom_vecs_;
+  vector<vector<Blob<Dtype>*> > pooling_top_vecs_;
+  vector<vector<Blob<Dtype>*> > flatten_top_vecs_;
+  vector<Blob<Dtype>*> concat_bottom_vec_;
+};
+
 }  // namespace caffe
 
 #endif  // CAFFE_VISION_LAYERS_HPP_
