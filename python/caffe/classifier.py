@@ -14,7 +14,7 @@ class Classifier(caffe.Net):
     by scaling, center cropping, or oversampling.
     """
     def __init__(self, model_file, pretrained_file, image_dims=None,
-                 gpu=False, mean=None, input_scale=None, raw_scale=None,
+                 gpu=False,gpu_id=0,mean=None,mean_mode = 'elementwise', input_scale=None, raw_scale=None,
                  channel_swap=None):
         """
         Take
@@ -23,16 +23,18 @@ class Classifier(caffe.Net):
         gpu, mean, input_scale, raw_scale, channel_swap: params for
             preprocessing options.
         """
-        caffe.Net.__init__(self, model_file, pretrained_file)
+        
         caffe.set_phase_test()
 
         if gpu:
+            caffe.set_device(gpu_id)
             caffe.set_mode_gpu()
         else:
             caffe.set_mode_cpu()
-
+        caffe.Net.__init__(self, model_file, pretrained_file)
+        
         if mean is not None:
-            self.set_mean(self.inputs[0], mean)
+            self.set_mean(self.inputs[0], mean,mean_mode)
         if input_scale is not None:
             self.set_input_scale(self.inputs[0], input_scale)
         if raw_scale is not None:
@@ -90,5 +92,47 @@ class Classifier(caffe.Net):
         if oversample:
             predictions = predictions.reshape((len(predictions) / 10, 10, -1))
             predictions = predictions.mean(1)
+
+        return predictions
+  
+    def predict_reshape(self, inputs,shape):
+        """
+        Predict classification probabilities of inputs.
+        Take input dimennsion same like input dimmension, reshape blob to do so
+        
+        inputs: iterable of (H x W x K) input ndarrays.
+
+        Give
+        predictions: (N x C) ndarray of class probabilities
+                     for N images and C classes.
+        """
+        self.image_dims[0] = shape[0]
+        self.image_dims[1] = shape[1]
+
+        self.blobs['data'].reshape(1, 3, self.image_dims[0], self.image_dims[1])
+        # Scale to standardize input dimensions.
+        input_ = np.zeros((len(inputs),
+            self.image_dims[0], self.image_dims[1], inputs[0].shape[2]),
+            dtype=np.float32)
+        for ix, in_ in enumerate(inputs):
+            input_[ix] = caffe.io.resize_image(in_, self.image_dims)
+
+        self.crop_dims = np.array(self.blobs[self.inputs[0]].data.shape[2:])
+        
+        # Take center crop.
+        center = np.array(self.image_dims) / 2.0
+        crop = np.tile(center, (1, 2))[0] + np.concatenate([
+            -self.crop_dims / 2.0,
+            self.crop_dims / 2.0
+        ])
+        input_reshape = input_[:, crop[0]:crop[2], crop[1]:crop[3], :]
+
+        # Classify
+        caffe_in = np.zeros(np.array(input_reshape.shape)[[0,3,1,2]],
+                            dtype=np.float32)
+        for ix, in_ in enumerate(input_reshape):
+            caffe_in[ix] = self.preprocess(self.inputs[0], in_)
+        predictions = self.forward_all(**{self.inputs[0]: caffe_in})
+        # predictions = out[self.outputs[0]].squeeze(axis=(2,3))
 
         return predictions

@@ -211,6 +211,7 @@ def _Net_set_mean(self, input_, mean, mode='elementwise'):
     mean: mean K x H x W ndarray (input dimensional or broadcastable)
     mode: elementwise = use the whole mean (and check dimensions)
           channel = channel constant (e.g. mean pixel instead of mean image)
+          mean_pixel = set directly mean pixel
     """
     if input_ not in self.inputs:
         raise Exception('Input not in {}'.format(self.inputs))
@@ -223,6 +224,8 @@ def _Net_set_mean(self, input_, mean, mode='elementwise'):
         self.mean[input_] = mean
     elif mode == 'channel':
         self.mean[input_] = mean.mean(1).mean(1).reshape((in_shape[1], 1, 1))
+    elif mode == 'mean_pixel':
+        self.mean[input_] = mean.reshape((3, 1, 1))
     else:
         raise Exception('Mode not in {}'.format(['elementwise', 'channel']))
 
