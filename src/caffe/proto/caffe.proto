@@ -273,7 +273,7 @@ message LayerParameter {
     THRESHOLD = 31;
 				SOFTMAX_REBALANCED_LOSS = 39;
 				PER_CLASS_ACCURACY = 42;
-        SPATIAL_PYRAMID_POOLING = 41;
+        SPATIAL_PYRAMID_POOLING = 43;
 				PYRAMID_LEVEL = 40;
   }
   optional LayerType type = 5; // the layer type from the enum above

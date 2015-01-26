@@ -54,6 +54,9 @@ void PerClassAccuracyLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& botto
   caffe_set(labels_count_.count(), Dtype(FLT_MIN), labels_count);
   caffe_set(accuracies_.count(), Dtype(FLT_MIN), accuracies);
   
+	 for (int j = 0; j < dim; ++j)  accuracies[j] = 0.0;
+	 
+	 
   for (int i = 0; i < num; ++i) {
     //count freq of each class
     labels_count[static_cast<int>(bottom_label[i])] += 1.0;
