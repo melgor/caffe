@@ -250,6 +250,10 @@ void PyramidLevelLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
   }
 }
 
+#ifdef CPU_ONLY
+STUB_GPU(PyramidLevelLayer);
+#endif
+
 
 INSTANTIATE_CLASS(PyramidLevelLayer);
 REGISTER_LAYER_CLASS(PYRAMID_LEVEL, PyramidLevelLayer);

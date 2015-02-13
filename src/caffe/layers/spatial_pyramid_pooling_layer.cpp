@@ -226,7 +226,9 @@ void SpatialPyramidPoolingLayer<Dtype>::Backward_cpu(
     pyramid_levels_[0]->Backward(top, propagate_down, bottom);
   }
 }
-
+#ifdef CPU_ONLY
+STUB_GPU(SpatialPyramidPoolingLayer);
+#endif
 
 INSTANTIATE_CLASS(SpatialPyramidPoolingLayer);
 REGISTER_LAYER_CLASS(SPATIAL_PYRAMID_POOLING, SpatialPyramidPoolingLayer);
