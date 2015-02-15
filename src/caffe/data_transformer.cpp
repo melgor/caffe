@@ -1,5 +1,6 @@
 #include <opencv2/core/core.hpp>
-
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <string>
 #include <vector>
 
@@ -172,10 +173,32 @@ void DataTransformer<Dtype>::Transform(const vector<Datum> & datum_vector,
     Transform(datum_vector[item_id], &uni_blob);
   }
 }
+/**
+ * Rotate an image
+ */
+void rotate(const cv::Mat& src, double angle, cv::Mat& dst)
+{
+    cv::RNG rng;
+    int len = std::max(src.cols, src.rows);
+    cv::Point2f pt(len/2., len/2.);
+    cv::Mat r = cv::getRotationMatrix2D(pt, angle, 1.0);
+    // produces double from [0, 5]
+    double shearx = rng.uniform((double)0, (double)0.3);
+    r.at<double>(1,0) = shearx;
+    double sheary = rng.uniform((double)0, (double)0.3);
+    r.at<double>(0,1) = sheary;
+    double scale = rng.uniform((double)0.8, (double)1.2);
+    r.at<double>(0,0) *= scale;
+    r.at<double>(1,1) *= scale;
+    cv::warpAffine(src, dst, r, cv::Size(len, len),CV_INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(255));
+}
 
 template<typename Dtype>
 void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
                                        Blob<Dtype>* transformed_blob) {
+//   cv::imwrite("1.jpg",cv_img);
+  
+//   cv::imwrite("2.jpg",dest);
   const int img_channels = cv_img.channels();
   const int img_height = cv_img.rows;
   const int img_width = cv_img.cols;
@@ -191,7 +214,7 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
   CHECK_GE(num, 1);
 
   CHECK(cv_img.depth() == CV_8U) << "Image data type must be unsigned byte";
-
+  
   const int crop_size = param_.crop_size();
   const Dtype scale = param_.scale();
   const bool do_mirror = param_.mirror() && Rand(2);
@@ -222,7 +245,17 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
 
   int h_off = 0;
   int w_off = 0;
-  cv::Mat cv_cropped_img = cv_img;
+  cv::Mat cv_cropped_img;
+  if (phase_ == Caffe::TRAIN) {
+//     cv_cropped_img = cv_img;
+    int angle = Rand(180);
+    rotate(cv_img,angle,cv_cropped_img);
+  }
+  else
+  {
+    cv_cropped_img = cv_img;
+  }
+  
   if (crop_size) {
     CHECK_EQ(crop_size, height);
     CHECK_EQ(crop_size, width);
@@ -240,7 +273,7 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
     CHECK_EQ(img_height, height);
     CHECK_EQ(img_width, width);
   }
-
+//   cv::imwrite("2.jpg",cv_cropped_img);
   CHECK(cv_cropped_img.data);
 
   Dtype* transformed_data = transformed_blob->mutable_cpu_data();

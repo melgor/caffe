@@ -108,6 +108,7 @@ void DataLayer<Dtype>::InternalThreadEntry() {
     if (datum.encoded()) {
        cv_img = DecodeDatumToCVMat(datum);
     }
+
     read_time += timer.MicroSeconds();
     timer.Start();
 
