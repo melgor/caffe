@@ -14,7 +14,7 @@ class Classifier(caffe.Net):
     by scaling, center cropping, or oversampling.
     """
     def __init__(self, model_file, pretrained_file, image_dims=None,
-                 gpu=False,gpu_id=0,mean=None,mean_mode = 'elementwise', input_scale=None, raw_scale=None,
+                 gpu=False,gpu_id=1,mean=None,mean_mode = 'elementwise', input_scale=None, raw_scale=None,
                  channel_swap=None):
         """
         Take
@@ -27,8 +27,9 @@ class Classifier(caffe.Net):
         caffe.set_phase_test()
 
         if gpu:
-            caffe.set_device(gpu_id)
+            caffe.set_device(0)
             caffe.set_mode_gpu()
+            caffe.set_device(0)
         else:
             caffe.set_mode_cpu()
         caffe.Net.__init__(self, model_file, pretrained_file)
@@ -132,7 +133,7 @@ class Classifier(caffe.Net):
                             dtype=np.float32)
         for ix, in_ in enumerate(input_reshape):
             caffe_in[ix] = self.preprocess(self.inputs[0], in_)
-        predictions = self.forward_all(**{self.inputs[0]: caffe_in})
-        # predictions = out[self.outputs[0]].squeeze(axis=(2,3))
+        out = self.forward_all(**{self.inputs[0]: caffe_in})
+        predictions = out[self.outputs[0]].squeeze(axis=(2,3))
 
         return predictions

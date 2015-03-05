@@ -45,10 +45,13 @@ void ContrastiveLossLayer<Dtype>::Forward_cpu(
   for (int i = 0; i < bottom[0]->num(); ++i) {
     dist_sq_.mutable_cpu_data()[i] = caffe_cpu_dot(channels,
         diff_.cpu_data() + (i*channels), diff_.cpu_data() + (i*channels));
+    
     if (static_cast<int>(bottom[2]->cpu_data()[i])) {  // similar pairs
       loss += dist_sq_.cpu_data()[i];
+      //std::cerr<<"Loss s: "<<dist_sq_.cpu_data()[i]<<std::endl;
     } else {  // dissimilar pairs
       loss += std::max(margin-dist_sq_.cpu_data()[i], Dtype(0.0));
+      //std::cerr<<"Loss d: "<<std::max(margin-dist_sq_.cpu_data()[i], Dtype(0.0))<<std::endl;
     }
   }
   loss = loss / static_cast<Dtype>(bottom[0]->num()) / Dtype(2);

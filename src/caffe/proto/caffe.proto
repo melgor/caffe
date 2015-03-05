@@ -276,6 +276,7 @@ message LayerParameter {
         SPATIAL_PYRAMID_POOLING = 43;
         PYRAMID_LEVEL = 40;
         LOCAL = 44;
+        SIM = 45;
   }
   optional LayerType type = 5; // the layer type from the enum above
 

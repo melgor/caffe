@@ -3,7 +3,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <string>
 #include <vector>
-
+#include <sstream>
 #include "caffe/data_transformer.hpp"
 #include "caffe/util/io.hpp"
 #include "caffe/util/math_functions.hpp"
@@ -176,21 +176,70 @@ void DataTransformer<Dtype>::Transform(const vector<Datum> & datum_vector,
 /**
  * Rotate an image
  */
-void rotate(const cv::Mat& src, double angle, cv::Mat& dst)
+int i = 0;
+void transform(const cv::Mat& src, cv::Mat& dst)
 {
     cv::RNG rng;
+    cv::Mat tmp;
     int len = std::max(src.cols, src.rows);
     cv::Point2f pt(len/2., len/2.);
-    cv::Mat r = cv::getRotationMatrix2D(pt, angle, 1.0);
-    // produces double from [0, 5]
-    double shearx = rng.uniform((double)0, (double)0.3);
-    r.at<double>(1,0) = shearx;
-    double sheary = rng.uniform((double)0, (double)0.3);
-    r.at<double>(0,1) = sheary;
+    double angle = rng.uniform((double)0.0, (double)180.0);
     double scale = rng.uniform((double)0.8, (double)1.2);
-    r.at<double>(0,0) *= scale;
-    r.at<double>(1,1) *= scale;
-    cv::warpAffine(src, dst, r, cv::Size(len, len),CV_INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(255));
+    cv::Mat r = cv::getRotationMatrix2D(pt, angle,scale);
+
+    double shear = rng.uniform((double)-0.2, (double)0.2);
+    int shear_bool = rng.uniform((int)0, (int)1);
+    if (shear_bool)
+    {
+      //shaer x
+      r.at<double>(1,0) *= shear;
+    }
+    else
+    {
+      //shaer y
+      r.at<double>(0,1) *= shear;
+    }
+    
+    double trans_x = rng.uniform((double)-10.0, (double)10.0);
+    double trans_y = rng.uniform((double)-10.0, (double)10.0);
+    int trans_bool = rng.uniform((int)0, (int)1);
+    if (trans_bool)
+    {
+      r.at<double>(0,2) += trans_x;
+      r.at<double>(1,2) += trans_y;
+    }
+    else if(shear_bool)
+    {
+      r.at<double>(1,2) += trans_y;
+    }
+    
+    cv::warpAffine(src, tmp, r, cv::Size(len, len),CV_INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(255));
+    
+    int blur_bool = rng.uniform((int)0, (int)1);
+    if(blur_bool)
+    {
+      cv::GaussianBlur(tmp,tmp,cv::Size(3,3),0); 
+    }
+    
+    int contrast_bool = rng.uniform((int)0, (int)1);
+
+    double alpha = rng.uniform((double)0.95, (double)1.05);
+    double beta = rng.uniform((double)-3, (double)3);
+    tmp.convertTo(dst,tmp.type(),alpha,beta);
+    
+//     std::string s;
+//     std::stringstream out;
+//     out << i;
+//     s = out.str();
+//     cv::imwrite(s + "_src.jpg",src );
+//     cv::imwrite(s +"_test.jpg",dst );
+//     //perspective?
+//     i++;
+   
+    
+    
+    
+    
 }
 
 template<typename Dtype>
@@ -247,9 +296,8 @@ void DataTransformer<Dtype>::Transform(const cv::Mat& cv_img,
   int w_off = 0;
   cv::Mat cv_cropped_img;
   if (phase_ == Caffe::TRAIN) {
+    transform(cv_img,cv_cropped_img);
 //     cv_cropped_img = cv_img;
-    int angle = Rand(180);
-    rotate(cv_img,angle,cv_cropped_img);
   }
   else
   {
