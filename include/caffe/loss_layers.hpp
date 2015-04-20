@@ -88,6 +88,39 @@ class AccuracyLayer : public Layer<Dtype> {
   int ignore_label_;
 };
 
+template <typename Dtype>
+class PerClassAccuracyLayer: public Layer<Dtype> {
+ public:
+  explicit PerClassAccuracyLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  virtual inline const char* type() const { return "PerClasAccuracy"; }
+  virtual inline int ExactNumBottomBlobs() const { return 2; }
+  virtual inline int ExactNumTopBlobs() const { return 1; }
+
+
+ protected:
+  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  /// @brief Not implemented -- PerClassAccuracyLayer cannot be used as a loss.
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
+    for (int i = 0; i < propagate_down.size(); ++i) {
+      if (propagate_down[i]) { NOT_IMPLEMENTED; }
+    }
+  }
+
+  Blob<Dtype> accuracies_;
+  // intermediary blob to hold label counts
+  Blob<Dtype> labels_count_;  
+  //class accuracies
+};
+
 /**
  * @brief An interface for Layer%s that take two Blob%s as input -- usually
  *        (1) predictions and (2) ground-truth labels -- and output a
@@ -764,6 +797,8 @@ class SoftmaxWithLossLayer : public LossLayer<Dtype> {
 
   int softmax_axis_, outer_num_, inner_num_;
 };
+
+
 
 }  // namespace caffe
 
